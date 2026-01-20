@@ -1,0 +1,148 @@
+name: Release WordPress Plugin
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - '*.*.*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse version from tag
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          # Remove 'v' prefix if present
+          VERSION=${TAG#v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Validate version format
+        id: validate
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format: $VERSION (expected semver like 1.0.0)"
+            exit 1
+          fi
+          echo "Version validated: $VERSION"
+
+      - name: Create plugin zip package
+        id: package
+        run: |
+          PLUGIN_NAME="carramba-woo-order-tracking"
+          VERSION=${{ steps.version.outputs.version }}
+          ZIP_NAME="${PLUGIN_NAME}-${VERSION}.zip"
+          ZIP_PATH="/tmp/${ZIP_NAME}"
+
+          # Create temporary directory for plugin
+          TEMP_DIR=$(mktemp -d)
+          PLUGIN_DIR="${TEMP_DIR}/${PLUGIN_NAME}"
+          mkdir -p "$PLUGIN_DIR"
+
+          # Copy plugin files, excluding dev/build files
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.gitignore' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='CLAUDE.md' \
+            --exclude='*.md' \
+            --exclude='.DS_Store' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='.env' \
+            --exclude='.env.example' \
+            --exclude='composer.json' \
+            --exclude='composer.lock' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='.eslintrc*' \
+            --exclude='.prettierrc*' \
+            --exclude='phpcs.xml*' \
+            --exclude='phpstan.neon*' \
+            --exclude='Makefile' \
+            ./ "$PLUGIN_DIR/" || true
+
+          # Create zip file
+          cd "$TEMP_DIR"
+          zip -r "$ZIP_PATH" "$PLUGIN_NAME" -q
+
+          # Verify zip was created
+          if [ ! -f "$ZIP_PATH" ]; then
+            echo "Error: Failed to create zip file"
+            exit 1
+          fi
+
+          # Get file size
+          ZIP_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
+          echo "Zip package created: $ZIP_NAME (${ZIP_SIZE})"
+          echo "zip_path=${ZIP_PATH}" >> $GITHUB_OUTPUT
+          echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          TAG=${{ steps.version.outputs.tag }}
+          VERSION=${{ steps.version.outputs.version }}
+
+          # Get tag message/annotation
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "")
+
+          # Build release notes
+          if [ -n "$TAG_MESSAGE" ]; then
+            NOTES="$TAG_MESSAGE"
+          else
+            NOTES="Release version $VERSION"
+          fi
+
+          # Add helpful footer
+          NOTES="${NOTES}
+
+---
+
+**Installation:**
+1. Download the attached \`carramba-woo-order-tracking-${VERSION}.zip\` file
+2. Go to WordPress Admin → Plugins → Add New
+3. Click 'Upload Plugin'
+4. Select the downloaded zip file and activate
+
+**Requirements:**
+- WordPress 5.0+
+- WooCommerce 4.0+
+- PHP 7.4+"
+
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          files: ${{ steps.package.outputs.zip_path }}
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print release summary
+        run: |
+          echo "Release Created Successfully!"
+          echo "- Tag: ${{ steps.version.outputs.tag }}"
+          echo "- Version: ${{ steps.version.outputs.version }}"
+          echo "- Zip Package: ${{ steps.package.outputs.zip_name }}"
+          echo "- Release URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
