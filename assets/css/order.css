@@ -1,0 +1,102 @@
+/* Order edit page styles for CWOT plugin */
+
+/* Meta box styles for order tracking */
+.cwot-tracking-meta-box .form-field {
+    margin-bottom: 15px;
+}
+
+.cwot-tracking-meta-box .form-field label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.cwot-tracking-meta-box .form-field select,
+.cwot-tracking-meta-box .form-field input[type="text"] {
+    width: 100%;
+    max-width: 100%;
+}
+
+.cwot-tracking-link {
+    margin-top: 10px;
+    display: inline-block;
+}
+
+/* Multiple tracking numbers */
+.cwot-tracking-numbers-container {
+    margin-bottom: 15px;
+}
+
+.cwot-tracking-numbers-container label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.cwot-tracking-number-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.cwot-tracking-number-input {
+    flex: 1;
+    width: 100% !important;
+}
+
+.cwot-remove-tracking-number {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: 20px;
+    line-height: 1;
+    color: #a00;
+    border-color: #a00;
+}
+
+.cwot-remove-tracking-number:hover {
+    background-color: #a00;
+    color: #fff;
+    border-color: #a00;
+}
+
+.cwot-tracking-links a {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Frontend order details styles */
+.woocommerce-order-tracking {
+    margin-top: 30px;
+}
+
+.woocommerce-order-tracking h2 {
+    margin-bottom: 15px;
+}
+
+.woocommerce-table--order-tracking {
+    margin-bottom: 20px;
+}
+
+.woocommerce-order-tracking-link {
+    color: #96588a;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.woocommerce-order-tracking-link:hover {
+    text-decoration: underline;
+}
+
+.woocommerce-order-tracking .button.wc-forward {
+    background-color: #96588a;
+    border-color: #96588a;
+    color: #ffffff;
+}
+
+.woocommerce-order-tracking .button.wc-forward:hover {
+    background-color: #7a4d82;
+    border-color: #7a4d82;
+}
