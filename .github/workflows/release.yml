@@ -103,30 +103,30 @@ jobs:
 
           # Build release notes
           if [ -n "$TAG_MESSAGE" ]; then
-            NOTES="$TAG_MESSAGE"
+            HEADER="$TAG_MESSAGE"
           else
-            NOTES="Release version $VERSION"
+            HEADER="Release version $VERSION"
           fi
 
-          # Add helpful footer
-          NOTES="${NOTES}
-
----
-
-**Installation:**
-1. Download the attached \`carramba-woo-order-tracking-${VERSION}.zip\` file
-2. Go to WordPress Admin → Plugins → Add New
-3. Click 'Upload Plugin'
-4. Select the downloaded zip file and activate
-
-**Requirements:**
-- WordPress 5.0+
-- WooCommerce 4.0+
-- PHP 7.4+"
-
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Write notes to output using heredoc
+          {
+            echo "notes<<RELEASE_NOTES_EOF"
+            echo "$HEADER"
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Installation:**"
+            echo "1. Download the attached carramba-woo-order-tracking-${VERSION}.zip file"
+            echo "2. Go to WordPress Admin → Plugins → Add New"
+            echo "3. Click Upload Plugin"
+            echo "4. Select the downloaded zip file and activate"
+            echo ""
+            echo "**Requirements:**"
+            echo "- WordPress 5.0+"
+            echo "- WooCommerce 4.0+"
+            echo "- PHP 7.4+"
+            echo "RELEASE_NOTES_EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
