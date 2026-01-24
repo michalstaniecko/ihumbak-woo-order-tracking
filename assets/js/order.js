@@ -116,6 +116,24 @@ jQuery(document).ready(function($) {
                     // Uncheck the send email checkbox after successful send
                     if (sendEmail && response.data.email_sent) {
                         $('#cwot_send_email').prop('checked', false);
+
+                        // Update or create the email sent info display
+                        if (response.data.email_sent_at) {
+                            var $emailInfo = $('.cwot-email-sent-info');
+                            var emailSentHtml = '<p class="cwot-email-sent-info" style="background: #d4edda; padding: 8px 10px; border-radius: 4px; margin-bottom: 10px;">' +
+                                '<span class="dashicons dashicons-email-alt" style="color: #155724; margin-right: 5px;"></span>' +
+                                '<strong>' + (i18n.emailSent || 'Email sent:') + '</strong><br>' +
+                                response.data.email_sent_at +
+                                '</p>';
+
+                            if ($emailInfo.length) {
+                                // Update existing element
+                                $emailInfo.replaceWith(emailSentHtml);
+                            } else {
+                                // Insert before the checkbox
+                                $('#cwot_send_email').closest('p').before(emailSentHtml);
+                            }
+                        }
                     }
 
                     // Clear status message after 3 seconds
