@@ -33,16 +33,21 @@ class CWOT_Admin {
      * Migrate old options to new options
      */
     private function maybe_migrate_options() {
-        // Check if old option exists and new one doesn't
         $old_option = get_option('cwot_show_in_email');
-        $new_option = get_option('cwot_enable_tracking_email');
 
-        if ($old_option !== false && $new_option === false) {
-            // Migrate the old value to the new option
-            update_option('cwot_enable_tracking_email', $old_option);
-            // Remove the old option
-            delete_option('cwot_show_in_email');
+        // Only proceed if old option exists
+        if ($old_option === false) {
+            return;
         }
+
+        // Migrate: only set new option if it doesn't exist
+        $new_option = get_option('cwot_enable_tracking_email');
+        if ($new_option === false) {
+            update_option('cwot_enable_tracking_email', $old_option);
+        }
+
+        // Always remove old option to prevent future checks
+        delete_option('cwot_show_in_email');
     }
     
     /**

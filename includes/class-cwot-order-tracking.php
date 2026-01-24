@@ -191,10 +191,6 @@ class CWOT_Order_Tracking {
                 <?php endif; ?>
             <?php endif; ?>
 
-            <?php
-            $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
-            if ($enable_tracking_email):
-            ?>
             <hr style="margin: 15px 0;">
 
             <?php
@@ -211,6 +207,10 @@ class CWOT_Order_Tracking {
             </p>
             <?php endif; ?>
 
+            <?php
+            $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
+            if ($enable_tracking_email):
+            ?>
             <p>
                 <label>
                     <input type="checkbox" id="cwot_send_email" name="cwot_send_email" value="1">

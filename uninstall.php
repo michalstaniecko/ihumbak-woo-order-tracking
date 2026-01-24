@@ -14,14 +14,26 @@ $table_name = $wpdb->prefix . 'cwot_shippers';
 $wpdb->query("DROP TABLE IF EXISTS $table_name");
 
 // Clean up order meta data - HPOS compatible cleanup
-if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && 
+$meta_keys = array(
+    '_cwot_tracking_shipper_id',
+    '_cwot_tracking_number',
+    '_cwot_tracking_numbers',
+    '_cwot_tracking_email_sent_at'
+);
+
+if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') &&
     \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()) {
     // HPOS cleanup - remove from order meta table
     $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
-    $wpdb->query($wpdb->prepare("DELETE FROM {$orders_meta_table} WHERE meta_key IN ('%s', '%s')", '_cwot_tracking_shipper_id', '_cwot_tracking_number'));
+    $placeholders = implode(', ', array_fill(0, count($meta_keys), '%s'));
+    $wpdb->query($wpdb->prepare(
+        "DELETE FROM {$orders_meta_table} WHERE meta_key IN ($placeholders)",
+        $meta_keys
+    ));
 } else {
     // Legacy cleanup - remove from post meta table
-    $wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ('_cwot_tracking_shipper_id', '_cwot_tracking_number')");
+    $meta_keys_sql = "'" . implode("', '", array_map('esc_sql', $meta_keys)) . "'";
+    $wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ($meta_keys_sql)");
 }
 
 // Clean up any plugin options (if we had any)
