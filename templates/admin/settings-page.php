@@ -47,8 +47,24 @@ if (!defined('ABSPATH')) {
                         </p>
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row">
+                        <?php _e('Data Management', 'carramba-woo-order-tracking'); ?>
+                    </th>
+                    <td>
+                        <fieldset>
+                            <label>
+                                <input type="checkbox" name="cwot_delete_data_on_uninstall" value="1" <?php checked($delete_data_on_uninstall, 1); ?>>
+                                <?php _e('Delete all plugin data when uninstalled', 'carramba-woo-order-tracking'); ?>
+                            </label>
+                        </fieldset>
+                        <p class="description">
+                            <?php _e('Warning: If enabled, all tracking data, shipping companies, and settings will be permanently deleted when this plugin is removed.', 'carramba-woo-order-tracking'); ?>
+                        </p>
+                    </td>
+                </tr>
             </table>
-            
+
             <p class="submit">
                 <input type="submit" class="button button-primary" value="<?php _e('Save Settings', 'carramba-woo-order-tracking'); ?>">
             </p>
