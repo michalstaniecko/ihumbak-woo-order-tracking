@@ -20,14 +20,26 @@ class CWOT_Email {
     }
     
     private function __construct() {
-        // Add tracking info to customer completed order email
-        add_action('woocommerce_email_before_order_table', array($this, 'add_tracking_info_to_email'), 10, 4);
-        
+        // Register custom tracking email class
+        add_filter('woocommerce_email_classes', array($this, 'register_tracking_email'));
+
         // Add tracking info to order details on my account page
         add_action('woocommerce_order_details_after_order_table', array($this, 'add_tracking_info_to_order_details'));
-        
+
         // Enqueue frontend styles for order tracking display
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_styles'));
+    }
+
+    /**
+     * Register custom tracking email class
+     *
+     * @param array $email_classes Existing email classes
+     * @return array Modified email classes
+     */
+    public function register_tracking_email($email_classes) {
+        require_once CWOT_PLUGIN_PATH . 'includes/class-cwot-email-tracking.php';
+        $email_classes['CWOT_Email_Tracking'] = new CWOT_Email_Tracking();
+        return $email_classes;
     }
     
     /**

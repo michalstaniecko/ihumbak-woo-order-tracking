@@ -96,6 +96,7 @@ class Carramba_WooCommerce_Order_Tracking {
         require_once CWOT_PLUGIN_PATH . 'includes/class-cwot-admin.php';
         require_once CWOT_PLUGIN_PATH . 'includes/class-cwot-order-tracking.php';
         require_once CWOT_PLUGIN_PATH . 'includes/class-cwot-email.php';
+        require_once CWOT_PLUGIN_PATH . 'includes/class-cwot-ajax.php';
     }
     
     /**
@@ -107,6 +108,7 @@ class Carramba_WooCommerce_Order_Tracking {
         CWOT_Admin::get_instance();
         CWOT_Order_Tracking::get_instance();
         CWOT_Email::get_instance();
+        CWOT_Ajax::get_instance();
     }
     
     /**
