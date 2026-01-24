@@ -101,8 +101,8 @@ class CWOT_Ajax {
             if (isset($emails['CWOT_Email_Tracking'])) {
                 $emails['CWOT_Email_Tracking']->trigger($order_id);
 
-                // Save the timestamp when email was sent
-                $email_sent_timestamp = current_time('timestamp');
+                // Save the timestamp when email was sent (use time() for proper UTC timestamp)
+                $email_sent_timestamp = time();
                 $order->update_meta_data('_cwot_tracking_email_sent_at', $email_sent_timestamp);
                 $order->save();
 
