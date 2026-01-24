@@ -24,6 +24,25 @@ class CWOT_Admin {
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_init', array($this, 'handle_form_submissions'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+
+        // Run migration check
+        $this->maybe_migrate_options();
+    }
+
+    /**
+     * Migrate old options to new options
+     */
+    private function maybe_migrate_options() {
+        // Check if old option exists and new one doesn't
+        $old_option = get_option('cwot_show_in_email');
+        $new_option = get_option('cwot_enable_tracking_email');
+
+        if ($old_option !== false && $new_option === false) {
+            // Migrate the old value to the new option
+            update_option('cwot_enable_tracking_email', $old_option);
+            // Remove the old option
+            delete_option('cwot_show_in_email');
+        }
     }
     
     /**
@@ -45,7 +64,7 @@ class CWOT_Admin {
      */
     public function register_settings() {
         register_setting('cwot_settings', 'cwot_show_in_order_details');
-        register_setting('cwot_settings', 'cwot_show_in_email');
+        register_setting('cwot_settings', 'cwot_enable_tracking_email');
     }
     
     /**
@@ -92,10 +111,10 @@ class CWOT_Admin {
      */
     private function save_settings() {
         $show_in_order_details = isset($_POST['cwot_show_in_order_details']) ? 1 : 0;
-        $show_in_email = isset($_POST['cwot_show_in_email']) ? 1 : 0;
-        
+        $enable_tracking_email = isset($_POST['cwot_enable_tracking_email']) ? 1 : 0;
+
         update_option('cwot_show_in_order_details', $show_in_order_details);
-        update_option('cwot_show_in_email', $show_in_email);
+        update_option('cwot_enable_tracking_email', $enable_tracking_email);
         
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success"><p>' . __('Settings saved successfully.', 'carramba-woo-order-tracking') . '</p></div>';
@@ -189,8 +208,8 @@ class CWOT_Admin {
     private function render_settings_page() {
         $active_tab = 'settings';
         $show_in_order_details = get_option('cwot_show_in_order_details', 1);
-        $show_in_email = get_option('cwot_show_in_email', 1);
-        
+        $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
+
         include CWOT_PLUGIN_PATH . 'templates/admin/settings-page.php';
     }
     
@@ -201,8 +220,8 @@ class CWOT_Admin {
         $active_tab = 'shippers';
         $shippers = CWOT_Database::get_all_shippers();
         $show_in_order_details = get_option('cwot_show_in_order_details', 1);
-        $show_in_email = get_option('cwot_show_in_email', 1);
-        
+        $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
+
         include CWOT_PLUGIN_PATH . 'templates/admin/settings-page.php';
     }
     

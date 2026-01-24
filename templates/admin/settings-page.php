@@ -38,12 +38,12 @@ if (!defined('ABSPATH')) {
                             </label>
                             <br>
                             <label>
-                                <input type="checkbox" name="cwot_show_in_email" value="1" <?php checked($show_in_email, 1); ?>>
-                                <?php _e('Show tracking information in customer email notifications', 'carramba-woo-order-tracking'); ?>
+                                <input type="checkbox" name="cwot_enable_tracking_email" value="1" <?php checked($enable_tracking_email, 1); ?>>
+                                <?php _e('Enable tracking email notifications', 'carramba-woo-order-tracking'); ?>
                             </label>
                         </fieldset>
                         <p class="description">
-                            <?php _e('Control where tracking information is displayed to customers.', 'carramba-woo-order-tracking'); ?>
+                            <?php _e('Control where tracking information is displayed to customers. When tracking emails are enabled, you can send tracking notification emails from the order edit page.', 'carramba-woo-order-tracking'); ?>
                         </p>
                     </td>
                 </tr>
