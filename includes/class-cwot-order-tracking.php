@@ -207,12 +207,17 @@ class CWOT_Order_Tracking {
             </p>
             <?php endif; ?>
 
+            <?php
+            $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
+            if ($enable_tracking_email):
+            ?>
             <p>
                 <label>
                     <input type="checkbox" id="cwot_send_email" name="cwot_send_email" value="1">
                     <?php _e('Send tracking email to customer', 'carramba-woo-order-tracking'); ?>
                 </label>
             </p>
+            <?php endif; ?>
             <p>
                 <button type="button" id="cwot-save-tracking" class="button button-primary">
                     <?php _e('Save Tracking', 'carramba-woo-order-tracking'); ?>

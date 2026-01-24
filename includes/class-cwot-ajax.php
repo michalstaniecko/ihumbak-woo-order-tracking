@@ -93,8 +93,9 @@ class CWOT_Ajax {
             'email_sent' => false,
         );
 
-        // Send tracking email if requested
-        if ($send_email && $shipper_id > 0 && !empty($tracking_numbers)) {
+        // Send tracking email if requested and globally enabled
+        $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
+        if ($send_email && $enable_tracking_email && $shipper_id > 0 && !empty($tracking_numbers)) {
             $mailer = WC()->mailer();
             $emails = $mailer->get_emails();
 

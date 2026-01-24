@@ -130,8 +130,13 @@ jQuery(document).ready(function($) {
                                 // Update existing element
                                 $emailInfo.replaceWith(emailSentHtml);
                             } else {
-                                // Insert before the checkbox
-                                $('#cwot_send_email').closest('p').before(emailSentHtml);
+                                // Insert before the checkbox, or fallback to Save button
+                                var $checkbox = $('#cwot_send_email').closest('p');
+                                if ($checkbox.length) {
+                                    $checkbox.before(emailSentHtml);
+                                } else {
+                                    $('#cwot-save-tracking').closest('p').before(emailSentHtml);
+                                }
                             }
                         }
                     }
