@@ -173,14 +173,14 @@ class CWOT_Order_Tracking {
             </div>
             
             <?php if ($tracking_shipper_id && !empty(array_filter($tracking_numbers))): ?>
-                <?php 
+                <?php
                 $shipper = CWOT_Database::get_shipper_by_id($tracking_shipper_id);
                 if ($shipper):
                 ?>
                     <div class="form-field cwot-tracking-links">
                         <label><?php _e('Tracking Links:', 'carramba-woo-order-tracking'); ?></label>
                         <?php foreach (array_filter($tracking_numbers) as $tracking_number): ?>
-                            <?php 
+                            <?php
                             $tracking_url = str_replace('{tracking_number}', urlencode($tracking_number), $shipper->tracking_url);
                             ?>
                             <a href="<?php echo esc_url($tracking_url); ?>" target="_blank" class="button button-secondary" style="width: 100%; text-align: center; margin-bottom: 5px;">
@@ -190,6 +190,21 @@ class CWOT_Order_Tracking {
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
+
+            <hr style="margin: 15px 0;">
+            <p>
+                <label>
+                    <input type="checkbox" id="cwot_send_email" name="cwot_send_email" value="1">
+                    <?php _e('Send tracking email to customer', 'carramba-woo-order-tracking'); ?>
+                </label>
+            </p>
+            <p>
+                <button type="button" id="cwot-save-tracking" class="button button-primary">
+                    <?php _e('Save Tracking', 'carramba-woo-order-tracking'); ?>
+                </button>
+                <span id="cwot-save-status" class="cwot-save-status"></span>
+            </p>
+            <input type="hidden" id="cwot-order-id" value="<?php echo esc_attr($order_id); ?>">
         </div>
         <?php
     }
@@ -215,6 +230,18 @@ class CWOT_Order_Tracking {
         if ($is_order_edit) {
             wp_enqueue_style('cwot-order-style', CWOT_PLUGIN_URL . 'assets/css/order.css', array(), CWOT_VERSION);
             wp_enqueue_script('cwot-order-script', CWOT_PLUGIN_URL . 'assets/js/order.js', array('jquery'), CWOT_VERSION, true);
+
+            wp_localize_script('cwot-order-script', 'cwot_ajax', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('cwot_ajax_action'),
+                'i18n' => array(
+                    'saving' => __('Saving...', 'carramba-woo-order-tracking'),
+                    'saved' => __('Saved!', 'carramba-woo-order-tracking'),
+                    'error' => __('Error saving.', 'carramba-woo-order-tracking'),
+                    'enterTrackingNumber' => __('Enter tracking number', 'carramba-woo-order-tracking'),
+                    'remove' => __('Remove', 'carramba-woo-order-tracking'),
+                ),
+            ));
         }
     }
     
