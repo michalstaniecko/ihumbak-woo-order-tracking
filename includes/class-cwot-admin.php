@@ -70,6 +70,7 @@ class CWOT_Admin {
     public function register_settings() {
         register_setting('cwot_settings', 'cwot_show_in_order_details');
         register_setting('cwot_settings', 'cwot_enable_tracking_email');
+        register_setting('cwot_settings', 'cwot_delete_data_on_uninstall');
     }
     
     /**
@@ -117,10 +118,12 @@ class CWOT_Admin {
     private function save_settings() {
         $show_in_order_details = isset($_POST['cwot_show_in_order_details']) ? 1 : 0;
         $enable_tracking_email = isset($_POST['cwot_enable_tracking_email']) ? 1 : 0;
+        $delete_data_on_uninstall = isset($_POST['cwot_delete_data_on_uninstall']) ? 1 : 0;
 
         update_option('cwot_show_in_order_details', $show_in_order_details);
         update_option('cwot_enable_tracking_email', $enable_tracking_email);
-        
+        update_option('cwot_delete_data_on_uninstall', $delete_data_on_uninstall);
+
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success"><p>' . __('Settings saved successfully.', 'carramba-woo-order-tracking') . '</p></div>';
         });
@@ -214,6 +217,7 @@ class CWOT_Admin {
         $active_tab = 'settings';
         $show_in_order_details = get_option('cwot_show_in_order_details', 1);
         $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
+        $delete_data_on_uninstall = get_option('cwot_delete_data_on_uninstall', 0);
 
         include CWOT_PLUGIN_PATH . 'templates/admin/settings-page.php';
     }
@@ -226,6 +230,7 @@ class CWOT_Admin {
         $shippers = CWOT_Database::get_all_shippers();
         $show_in_order_details = get_option('cwot_show_in_order_details', 1);
         $enable_tracking_email = get_option('cwot_enable_tracking_email', 1);
+        $delete_data_on_uninstall = get_option('cwot_delete_data_on_uninstall', 0);
 
         include CWOT_PLUGIN_PATH . 'templates/admin/settings-page.php';
     }
