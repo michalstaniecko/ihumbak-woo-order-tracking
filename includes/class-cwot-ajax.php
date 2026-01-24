@@ -100,7 +100,19 @@ class CWOT_Ajax {
 
             if (isset($emails['CWOT_Email_Tracking'])) {
                 $emails['CWOT_Email_Tracking']->trigger($order_id);
+
+                // Save the timestamp when email was sent (use time() for proper UTC timestamp)
+                $email_sent_timestamp = time();
+                $order->update_meta_data('_cwot_tracking_email_sent_at', $email_sent_timestamp);
+                $order->save();
+
+                // Format the datetime for display
+                $date_format = get_option('date_format');
+                $time_format = get_option('time_format');
+                $formatted_datetime = date_i18n($date_format . ' ' . $time_format, $email_sent_timestamp);
+
                 $response['email_sent'] = true;
+                $response['email_sent_at'] = $formatted_datetime;
                 $response['message'] = __('Tracking information saved and email sent successfully.', 'carramba-woo-order-tracking');
             } else {
                 $response['message'] = __('Tracking information saved but email could not be sent.', 'carramba-woo-order-tracking');

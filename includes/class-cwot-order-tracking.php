@@ -192,6 +192,21 @@ class CWOT_Order_Tracking {
             <?php endif; ?>
 
             <hr style="margin: 15px 0;">
+
+            <?php
+            $email_sent_at = $this->get_order_meta($order_id, '_cwot_tracking_email_sent_at', true);
+            if ($email_sent_at):
+                $date_format = get_option('date_format');
+                $time_format = get_option('time_format');
+                $formatted_datetime = date_i18n($date_format . ' ' . $time_format, $email_sent_at);
+            ?>
+            <p class="cwot-email-sent-info" style="background: #d4edda; padding: 8px 10px; border-radius: 4px; margin-bottom: 10px;">
+                <span class="dashicons dashicons-email-alt" style="color: #155724; margin-right: 5px;"></span>
+                <strong><?php _e('Email sent:', 'carramba-woo-order-tracking'); ?></strong><br>
+                <?php echo esc_html($formatted_datetime); ?>
+            </p>
+            <?php endif; ?>
+
             <p>
                 <label>
                     <input type="checkbox" id="cwot_send_email" name="cwot_send_email" value="1">
@@ -240,6 +255,7 @@ class CWOT_Order_Tracking {
                     'error' => __('Error saving.', 'carramba-woo-order-tracking'),
                     'enterTrackingNumber' => __('Enter tracking number', 'carramba-woo-order-tracking'),
                     'remove' => __('Remove', 'carramba-woo-order-tracking'),
+                    'emailSent' => __('Email sent:', 'carramba-woo-order-tracking'),
                 ),
             ));
         }
