@@ -69,11 +69,18 @@ class CWOT_Ajax {
         });
         $tracking_numbers = array_values($tracking_numbers);
 
-        // Save shipper ID
+        // Save shipper ID and snapshot of shipper data
         if ($shipper_id > 0) {
-            $order->update_meta_data('_cwot_tracking_shipper_id', $shipper_id);
+            $shipper = CWOT_Database::get_shipper_by_id($shipper_id);
+            if ($shipper) {
+                $order->update_meta_data('_cwot_tracking_shipper_id', $shipper_id);
+                $order->update_meta_data('_cwot_tracking_shipper_name', $shipper->name);
+                $order->update_meta_data('_cwot_tracking_url', $shipper->tracking_url);
+            }
         } else {
             $order->delete_meta_data('_cwot_tracking_shipper_id');
+            $order->delete_meta_data('_cwot_tracking_shipper_name');
+            $order->delete_meta_data('_cwot_tracking_url');
         }
 
         // Save tracking numbers
