@@ -306,6 +306,11 @@ class CWOT_Order_Tracking {
                     $this->update_order_meta($order_id, '_cwot_tracking_shipper_id', $shipper_id);
                     $this->update_order_meta($order_id, '_cwot_tracking_shipper_name', $shipper->name);
                     $this->update_order_meta($order_id, '_cwot_tracking_url', $shipper->tracking_url);
+                } else {
+                    // Shipper was deleted - clear invalid reference
+                    $this->delete_order_meta($order_id, '_cwot_tracking_shipper_id');
+                    $this->delete_order_meta($order_id, '_cwot_tracking_shipper_name');
+                    $this->delete_order_meta($order_id, '_cwot_tracking_url');
                 }
             } else {
                 $this->delete_order_meta($order_id, '_cwot_tracking_shipper_id');
@@ -377,6 +382,7 @@ class CWOT_Order_Tracking {
      */
     private function render_tracking_column_content($order_id) {
         $tracking_numbers = $this->get_order_meta($order_id, '_cwot_tracking_numbers', true);
+        $tracking_shipper_id = $this->get_order_meta($order_id, '_cwot_tracking_shipper_id', true);
 
         // Backward compatibility - check old single tracking number
         if (empty($tracking_numbers)) {
@@ -392,7 +398,11 @@ class CWOT_Order_Tracking {
 
         $tracking_numbers = array_filter($tracking_numbers);
 
-        if (!empty($tracking_numbers)) {
+        // Check for complete tracking data (numbers + shipper or stored snapshot)
+        $has_shipper_data = !empty($tracking_shipper_id) ||
+                            !empty($this->get_order_meta($order_id, '_cwot_tracking_shipper_name', true));
+
+        if (!empty($tracking_numbers) && $has_shipper_data) {
             // Check if email was sent
             $email_sent_at = $this->get_order_meta($order_id, '_cwot_tracking_email_sent_at', true);
 

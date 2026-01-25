@@ -76,6 +76,11 @@ class CWOT_Ajax {
                 $order->update_meta_data('_cwot_tracking_shipper_id', $shipper_id);
                 $order->update_meta_data('_cwot_tracking_shipper_name', $shipper->name);
                 $order->update_meta_data('_cwot_tracking_url', $shipper->tracking_url);
+            } else {
+                // Shipper was deleted - clear invalid reference
+                $order->delete_meta_data('_cwot_tracking_shipper_id');
+                $order->delete_meta_data('_cwot_tracking_shipper_name');
+                $order->delete_meta_data('_cwot_tracking_url');
             }
         } else {
             $order->delete_meta_data('_cwot_tracking_shipper_id');
