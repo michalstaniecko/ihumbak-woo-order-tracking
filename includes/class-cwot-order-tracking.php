@@ -317,7 +317,7 @@ class CWOT_Order_Tracking {
             
             // Add tracking column after order status
             if ($key === 'order_status') {
-                $new_columns['cwot_tracking'] = __('Tracking', 'carramba-woo-order-tracking');
+                $new_columns['cwot_tracking'] = __('Tracking Status', 'carramba-woo-order-tracking');
             }
         }
         
@@ -346,9 +346,8 @@ class CWOT_Order_Tracking {
      * Render tracking column content
      */
     private function render_tracking_column_content($order_id) {
-        $tracking_shipper_id = $this->get_order_meta($order_id, '_cwot_tracking_shipper_id', true);
         $tracking_numbers = $this->get_order_meta($order_id, '_cwot_tracking_numbers', true);
-        
+
         // Backward compatibility - check old single tracking number
         if (empty($tracking_numbers)) {
             $old_tracking_number = $this->get_order_meta($order_id, '_cwot_tracking_number', true);
@@ -356,30 +355,24 @@ class CWOT_Order_Tracking {
                 $tracking_numbers = array($old_tracking_number);
             }
         }
-        
+
         if (!is_array($tracking_numbers)) {
             $tracking_numbers = empty($tracking_numbers) ? array() : array($tracking_numbers);
         }
-        
+
         $tracking_numbers = array_filter($tracking_numbers);
-        
-        if ($tracking_shipper_id && !empty($tracking_numbers)) {
-            $shipper = CWOT_Database::get_shipper_by_id($tracking_shipper_id);
-            if ($shipper) {
-                echo '<div class="cwot-tracking-info">';
-                echo '<strong>' . esc_html($shipper->name) . '</strong><br>';
-                foreach ($tracking_numbers as $tracking_number) {
-                    $tracking_url = str_replace('{tracking_number}', urlencode($tracking_number), $shipper->tracking_url);
-                    echo '<a href="' . esc_url($tracking_url) . '" target="_blank" title="' . __('Track package', 'carramba-woo-order-tracking') . '">';
-                    echo esc_html($tracking_number);
-                    echo '</a><br>';
-                }
-                echo '</div>';
+
+        if (!empty($tracking_numbers)) {
+            // Check if email was sent
+            $email_sent_at = $this->get_order_meta($order_id, '_cwot_tracking_email_sent_at', true);
+
+            if (!empty($email_sent_at)) {
+                echo '<span class="cwot-status cwot-status-sent">' . esc_html__('Sent', 'carramba-woo-order-tracking') . '</span>';
             } else {
-                echo '<span class="cwot-tracking-error">' . __('Invalid shipper', 'carramba-woo-order-tracking') . '</span>';
+                echo '<span class="cwot-status cwot-status-ready">' . esc_html__('Ready', 'carramba-woo-order-tracking') . '</span>';
             }
         } else {
-            echo '<span class="cwot-no-tracking">' . __('No tracking', 'carramba-woo-order-tracking') . '</span>';
+            echo '<span class="cwot-status cwot-status-none">' . esc_html__('No tracking', 'carramba-woo-order-tracking') . '</span>';
         }
     }
     
