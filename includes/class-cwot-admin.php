@@ -77,12 +77,31 @@ class CWOT_Admin {
      * Enqueue admin scripts and styles
      */
     public function enqueue_admin_scripts($hook) {
-        if ($hook !== 'woocommerce_page_cwot-settings') {
+        // Load CSS on settings page, orders list page (HPOS and legacy)
+        $allowed_pages = array(
+            'woocommerce_page_cwot-settings',
+            'woocommerce_page_wc-orders', // HPOS orders list
+            'edit.php', // Legacy orders list (post_type=shop_order)
+        );
+
+        if (!in_array($hook, $allowed_pages)) {
             return;
         }
-        
+
+        // For legacy edit.php, check if it's the shop_order post type
+        if ($hook === 'edit.php') {
+            $screen = get_current_screen();
+            if (!$screen || $screen->post_type !== 'shop_order') {
+                return;
+            }
+        }
+
         wp_enqueue_style('cwot-admin-style', CWOT_PLUGIN_URL . 'assets/css/admin.css', array(), CWOT_VERSION);
-        wp_enqueue_script('cwot-admin-script', CWOT_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), CWOT_VERSION, true);
+
+        // Only load JS on settings page
+        if ($hook === 'woocommerce_page_cwot-settings') {
+            wp_enqueue_script('cwot-admin-script', CWOT_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), CWOT_VERSION, true);
+        }
     }
     
     /**

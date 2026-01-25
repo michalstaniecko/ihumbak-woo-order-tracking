@@ -10,31 +10,21 @@
     font-weight: bold;
 }
 
-.cwot-tracking-info {
+/* Tracking status in order list */
+.cwot-status {
+    font-weight: bold;
     font-size: 12px;
-    line-height: 1.4;
 }
 
-.cwot-tracking-info strong {
-    display: block;
-    margin-bottom: 2px;
+.cwot-status-sent {
+    color: #46b450;
 }
 
-.cwot-tracking-info a {
-    text-decoration: none;
-    color: #2271b1;
+.cwot-status-ready {
+    color: #f0b849;
 }
 
-.cwot-tracking-info a:hover {
-    text-decoration: underline;
-}
-
-.cwot-tracking-error {
-    color: #dc3232;
-    font-style: italic;
-}
-
-.cwot-no-tracking {
+.cwot-status-none {
     color: #8c8f94;
     font-style: italic;
 }

@@ -40,8 +40,11 @@ All core classes use `get_instance()` singleton pattern and are initialized in t
 - **Custom table:** `{prefix}_cwot_shippers` - Stores shipping company profiles
 - **Order meta keys:**
   - `_cwot_tracking_shipper_id` - Selected shipper ID
+  - `_cwot_tracking_shipper_name` - Shipper name snapshot (for deleted shipper fallback)
+  - `_cwot_tracking_url` - Tracking URL template snapshot (for deleted shipper fallback)
   - `_cwot_tracking_numbers` - Array of tracking numbers
   - `_cwot_tracking_number` - Legacy single tracking (backward compat)
+  - `_cwot_tracking_email_sent_at` - Timestamp when tracking email was sent
 
 ### HPOS Compatibility
 

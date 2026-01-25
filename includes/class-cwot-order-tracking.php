@@ -141,12 +141,28 @@ class CWOT_Order_Tracking {
         }
         
         $shippers = CWOT_Database::get_active_shippers();
+        $stored_shipper_name = $this->get_order_meta($order_id, '_cwot_tracking_shipper_name', true);
+        $shipper_exists = false;
+
+        if ($tracking_shipper_id) {
+            foreach ($shippers as $s) {
+                if ($s->id == $tracking_shipper_id) {
+                    $shipper_exists = true;
+                    break;
+                }
+            }
+        }
         ?>
         <div class="cwot-tracking-meta-box">
             <p class="form-field">
                 <label for="_cwot_tracking_shipper_id"><?php _e('Shipper:', 'carramba-woo-order-tracking'); ?></label>
                 <select id="_cwot_tracking_shipper_id" name="_cwot_tracking_shipper_id" class="wc-enhanced-select" style="width: 100%;">
                     <option value=""><?php _e('Select a shipper...', 'carramba-woo-order-tracking'); ?></option>
+                    <?php if ($tracking_shipper_id && !$shipper_exists && $stored_shipper_name): ?>
+                        <option value="<?php echo esc_attr($tracking_shipper_id); ?>" selected disabled>
+                            <?php echo esc_html($stored_shipper_name); ?> (<?php _e('deleted', 'carramba-woo-order-tracking'); ?>)
+                        </option>
+                    <?php endif; ?>
                     <?php foreach ($shippers as $shipper): ?>
                         <option value="<?php echo esc_attr($shipper->id); ?>" <?php selected($tracking_shipper_id, $shipper->id); ?>>
                             <?php echo esc_html($shipper->name); ?>
@@ -175,13 +191,20 @@ class CWOT_Order_Tracking {
             <?php if ($tracking_shipper_id && !empty(array_filter($tracking_numbers))): ?>
                 <?php
                 $shipper = CWOT_Database::get_shipper_by_id($tracking_shipper_id);
-                if ($shipper):
+                $tracking_url_template = $shipper ? $shipper->tracking_url : $this->get_order_meta($order_id, '_cwot_tracking_url', true);
+
+                if ($tracking_url_template):
                 ?>
                     <div class="form-field cwot-tracking-links">
                         <label><?php _e('Tracking Links:', 'carramba-woo-order-tracking'); ?></label>
+                        <?php if (!$shipper): ?>
+                            <p class="description" style="color: #d63638;">
+                                <?php _e('Note: Original shipper was deleted. Links use stored URL.', 'carramba-woo-order-tracking'); ?>
+                            </p>
+                        <?php endif; ?>
                         <?php foreach (array_filter($tracking_numbers) as $tracking_number): ?>
                             <?php
-                            $tracking_url = str_replace('{tracking_number}', urlencode($tracking_number), $shipper->tracking_url);
+                            $tracking_url = str_replace('{tracking_number}', urlencode($tracking_number), $tracking_url_template);
                             ?>
                             <a href="<?php echo esc_url($tracking_url); ?>" target="_blank" class="button button-secondary" style="width: 100%; text-align: center; margin-bottom: 5px;">
                                 <?php echo sprintf(__('Track %s', 'carramba-woo-order-tracking'), esc_html($tracking_number)); ?>
@@ -274,13 +297,25 @@ class CWOT_Order_Tracking {
             return;
         }
         
-        // Save shipper ID
+        // Save shipper ID and snapshot of shipper data
         if (isset($_POST['_cwot_tracking_shipper_id'])) {
             $shipper_id = intval($_POST['_cwot_tracking_shipper_id']);
             if ($shipper_id > 0) {
-                $this->update_order_meta($order_id, '_cwot_tracking_shipper_id', $shipper_id);
+                $shipper = CWOT_Database::get_shipper_by_id($shipper_id);
+                if ($shipper) {
+                    $this->update_order_meta($order_id, '_cwot_tracking_shipper_id', $shipper_id);
+                    $this->update_order_meta($order_id, '_cwot_tracking_shipper_name', $shipper->name);
+                    $this->update_order_meta($order_id, '_cwot_tracking_url', $shipper->tracking_url);
+                } else {
+                    // Shipper was deleted - clear invalid reference
+                    $this->delete_order_meta($order_id, '_cwot_tracking_shipper_id');
+                    $this->delete_order_meta($order_id, '_cwot_tracking_shipper_name');
+                    $this->delete_order_meta($order_id, '_cwot_tracking_url');
+                }
             } else {
                 $this->delete_order_meta($order_id, '_cwot_tracking_shipper_id');
+                $this->delete_order_meta($order_id, '_cwot_tracking_shipper_name');
+                $this->delete_order_meta($order_id, '_cwot_tracking_url');
             }
         }
         
@@ -317,7 +352,7 @@ class CWOT_Order_Tracking {
             
             // Add tracking column after order status
             if ($key === 'order_status') {
-                $new_columns['cwot_tracking'] = __('Tracking', 'carramba-woo-order-tracking');
+                $new_columns['cwot_tracking'] = __('Tracking Status', 'carramba-woo-order-tracking');
             }
         }
         
@@ -346,9 +381,9 @@ class CWOT_Order_Tracking {
      * Render tracking column content
      */
     private function render_tracking_column_content($order_id) {
-        $tracking_shipper_id = $this->get_order_meta($order_id, '_cwot_tracking_shipper_id', true);
         $tracking_numbers = $this->get_order_meta($order_id, '_cwot_tracking_numbers', true);
-        
+        $tracking_shipper_id = $this->get_order_meta($order_id, '_cwot_tracking_shipper_id', true);
+
         // Backward compatibility - check old single tracking number
         if (empty($tracking_numbers)) {
             $old_tracking_number = $this->get_order_meta($order_id, '_cwot_tracking_number', true);
@@ -356,30 +391,28 @@ class CWOT_Order_Tracking {
                 $tracking_numbers = array($old_tracking_number);
             }
         }
-        
+
         if (!is_array($tracking_numbers)) {
             $tracking_numbers = empty($tracking_numbers) ? array() : array($tracking_numbers);
         }
-        
+
         $tracking_numbers = array_filter($tracking_numbers);
-        
-        if ($tracking_shipper_id && !empty($tracking_numbers)) {
-            $shipper = CWOT_Database::get_shipper_by_id($tracking_shipper_id);
-            if ($shipper) {
-                echo '<div class="cwot-tracking-info">';
-                echo '<strong>' . esc_html($shipper->name) . '</strong><br>';
-                foreach ($tracking_numbers as $tracking_number) {
-                    $tracking_url = str_replace('{tracking_number}', urlencode($tracking_number), $shipper->tracking_url);
-                    echo '<a href="' . esc_url($tracking_url) . '" target="_blank" title="' . __('Track package', 'carramba-woo-order-tracking') . '">';
-                    echo esc_html($tracking_number);
-                    echo '</a><br>';
-                }
-                echo '</div>';
+
+        // Check for complete tracking data (numbers + shipper or stored snapshot)
+        $has_shipper_data = !empty($tracking_shipper_id) ||
+                            !empty($this->get_order_meta($order_id, '_cwot_tracking_shipper_name', true));
+
+        if (!empty($tracking_numbers) && $has_shipper_data) {
+            // Check if email was sent
+            $email_sent_at = $this->get_order_meta($order_id, '_cwot_tracking_email_sent_at', true);
+
+            if (!empty($email_sent_at)) {
+                echo '<span class="cwot-status cwot-status-sent">' . esc_html__('Sent', 'carramba-woo-order-tracking') . '</span>';
             } else {
-                echo '<span class="cwot-tracking-error">' . __('Invalid shipper', 'carramba-woo-order-tracking') . '</span>';
+                echo '<span class="cwot-status cwot-status-ready">' . esc_html__('Ready', 'carramba-woo-order-tracking') . '</span>';
             }
         } else {
-            echo '<span class="cwot-no-tracking">' . __('No tracking', 'carramba-woo-order-tracking') . '</span>';
+            echo '<span class="cwot-status cwot-status-none">' . esc_html__('No tracking', 'carramba-woo-order-tracking') . '</span>';
         }
     }
     
@@ -390,7 +423,7 @@ class CWOT_Order_Tracking {
         $instance = self::get_instance();
         $tracking_shipper_id = $instance->get_order_meta($order_id, '_cwot_tracking_shipper_id', true);
         $tracking_numbers = $instance->get_order_meta($order_id, '_cwot_tracking_numbers', true);
-        
+
         // Backward compatibility - check old single tracking number
         if (empty($tracking_numbers)) {
             $old_tracking_number = $instance->get_order_meta($order_id, '_cwot_tracking_number', true);
@@ -398,38 +431,51 @@ class CWOT_Order_Tracking {
                 $tracking_numbers = array($old_tracking_number);
             }
         }
-        
+
         if (!is_array($tracking_numbers)) {
             $tracking_numbers = empty($tracking_numbers) ? array() : array($tracking_numbers);
         }
-        
+
         $tracking_numbers = array_filter($tracking_numbers);
-        
-        if (!$tracking_shipper_id || empty($tracking_numbers)) {
+
+        if (empty($tracking_numbers)) {
             return false;
         }
-        
-        $shipper = CWOT_Database::get_shipper_by_id($tracking_shipper_id);
-        if (!$shipper) {
+
+        // Try to get shipper from database
+        $shipper = $tracking_shipper_id ? CWOT_Database::get_shipper_by_id($tracking_shipper_id) : null;
+
+        if ($shipper) {
+            // Shipper exists - use current data from database
+            $shipper_name = $shipper->name;
+            $tracking_url_template = $shipper->tracking_url;
+        } else {
+            // Shipper deleted - use stored snapshot from order meta
+            $shipper_name = $instance->get_order_meta($order_id, '_cwot_tracking_shipper_name', true);
+            $tracking_url_template = $instance->get_order_meta($order_id, '_cwot_tracking_url', true);
+        }
+
+        // No shipper data available - tracking incomplete
+        if (empty($shipper_name) || empty($tracking_url_template)) {
             return false;
         }
-        
+
         // Build tracking info array for each tracking number
         $tracking_items = array();
         foreach ($tracking_numbers as $tracking_number) {
             $tracking_items[] = array(
                 'tracking_number' => $tracking_number,
-                'tracking_url' => str_replace('{tracking_number}', urlencode($tracking_number), $shipper->tracking_url)
+                'tracking_url' => str_replace('{tracking_number}', urlencode($tracking_number), $tracking_url_template)
             );
         }
-        
+
         return array(
             'shipper_id' => $tracking_shipper_id,
-            'shipper_name' => $shipper->name,
+            'shipper_name' => $shipper_name,
             'tracking_items' => $tracking_items,
             // Keep for backward compatibility
             'tracking_number' => $tracking_numbers[0],
-            'tracking_url' => str_replace('{tracking_number}', urlencode($tracking_numbers[0]), $shipper->tracking_url)
+            'tracking_url' => str_replace('{tracking_number}', urlencode($tracking_numbers[0]), $tracking_url_template)
         );
     }
 }
