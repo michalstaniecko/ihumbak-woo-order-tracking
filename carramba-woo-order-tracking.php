@@ -3,7 +3,7 @@
  * Plugin Name: Carramba WooCommerce Order Tracking
  * Plugin URI: https://github.com/michalstaniecko/carramba-woo-order-tracking
  * Description: WooCommerce order tracking plugin that allows admins to manage shippers and add tracking information to customer email notifications. Compatible with WooCommerce High-Performance Order Storage (HPOS).
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: Michal Staniećko
  * Text Domain: carramba-woo-order-tracking
  * Domain Path: /languages
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CWOT_VERSION', '1.1.0');
+define('CWOT_VERSION', '1.1.1');
 define('CWOT_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CWOT_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('CWOT_PLUGIN_BASENAME', plugin_basename(__FILE__));
