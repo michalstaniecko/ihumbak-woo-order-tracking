@@ -65,6 +65,17 @@ jobs:
             echo "Please update version numbers before the next release."
           fi
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: dom, curl, libxml, mbstring, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-progress --no-interaction
+
       - name: Build release ZIP
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -102,6 +113,8 @@ jobs:
             --exclude='*.cache' \
             --exclude='.env' \
             --exclude='.env.*' \
+            --exclude='composer.json' \
+            --exclude='composer.lock' \
             ./ "${BUILD_DIR}/${PLUGIN_SLUG}/"
 
           cd "${BUILD_DIR}"

@@ -3,7 +3,7 @@
  * Plugin Name: Carramba WooCommerce Order Tracking
  * Plugin URI: https://github.com/michalstaniecko/carramba-woo-order-tracking
  * Description: WooCommerce order tracking plugin that allows admins to manage shippers and add tracking information to customer email notifications. Compatible with WooCommerce High-Performance Order Storage (HPOS).
- * Version: 1.0.4
+ * Version: 1.1.0
  * Author: Michal Staniećko
  * Text Domain: carramba-woo-order-tracking
  * Domain Path: /languages
@@ -22,10 +22,15 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CWOT_VERSION', '1.0.4');
+define('CWOT_VERSION', '1.1.0');
 define('CWOT_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CWOT_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('CWOT_PLUGIN_BASENAME', plugin_basename(__FILE__));
+
+// Load Composer autoloader
+if (file_exists(CWOT_PLUGIN_PATH . 'vendor/autoload.php')) {
+    require_once CWOT_PLUGIN_PATH . 'vendor/autoload.php';
+}
 
 /**
  * Main plugin class
@@ -58,6 +63,13 @@ class Carramba_WooCommerce_Order_Tracking {
      * Initialize the plugin
      */
     public function init() {
+        // Initialize update checker (does not depend on WooCommerce)
+        require_once CWOT_PLUGIN_PATH . 'includes/class-cwot-update-service.php';
+        $update_service = new CWOT_Update_Service();
+        if ($update_service->is_enabled()) {
+            $update_service->init();
+        }
+
         // Check if WooCommerce is active
         if (!class_exists('WooCommerce')) {
             add_action('admin_notices', array($this, 'woocommerce_missing_notice'));
