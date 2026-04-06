@@ -1,148 +1,152 @@
-name: Release WordPress Plugin
+name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
-      - '*.*.*'
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   release:
-    name: Create Release
+    name: Build and Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Parse version from tag
+      - name: Extract version from tag
         id: version
         run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          # Remove 'v' prefix if present
-          VERSION=${TAG#v}
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Extracted version: ${VERSION} from tag: ${TAG_NAME}"
 
-      - name: Validate version format
-        id: validate
+      - name: Validate semver format
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version format: $VERSION (expected semver like 1.0.0)"
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(stable|beta|b|rc|alpha|a|patch|pl|p|dev)[0-9]*)?$ ]]; then
+            echo "Error: Invalid version format '${VERSION}'"
+            echo "Valid examples: 1.0.0, 1.0.0-beta, 1.0.0-beta1, 1.0.0-rc1, 1.0.0-alpha, 1.0.0-dev"
             exit 1
           fi
-          echo "Version validated: $VERSION"
+          echo "Version format is valid: ${VERSION}"
 
-      - name: Create plugin zip package
-        id: package
+      - name: Verify version in project files
         run: |
-          PLUGIN_NAME="carramba-woo-order-tracking"
-          VERSION=${{ steps.version.outputs.version }}
-          ZIP_NAME="${PLUGIN_NAME}-${VERSION}.zip"
-          ZIP_PATH="/tmp/${ZIP_NAME}"
+          VERSION="${{ steps.version.outputs.version }}"
+          ERRORS=0
 
-          # Create temporary directory for plugin
-          TEMP_DIR=$(mktemp -d)
-          PLUGIN_DIR="${TEMP_DIR}/${PLUGIN_NAME}"
-          mkdir -p "$PLUGIN_DIR"
+          # Check Version header in plugin file
+          PLUGIN_HEADER_VERSION=$(grep -E "^\s*\*\s*Version:" carramba-woo-order-tracking.php | sed 's/.*Version:\s*//' | tr -d '[:space:]')
+          if [[ "$PLUGIN_HEADER_VERSION" != "$VERSION" ]]; then
+            echo "Warning: Plugin header version mismatch - expected '${VERSION}', found '${PLUGIN_HEADER_VERSION}'"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "Plugin header version matches: ${PLUGIN_HEADER_VERSION}"
+          fi
 
-          # Copy plugin files, excluding dev/build files
-          rsync -av \
+          # Check version constant
+          CONSTANT_VERSION=$(grep "CWOT_VERSION" carramba-woo-order-tracking.php | sed "s/.*'\([^']*\)'.*/\1/")
+          if [[ "$CONSTANT_VERSION" != "$VERSION" ]]; then
+            echo "Warning: CWOT_VERSION mismatch - expected '${VERSION}', found '${CONSTANT_VERSION}'"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "CWOT_VERSION matches: ${CONSTANT_VERSION}"
+          fi
+
+          if [[ $ERRORS -gt 0 ]]; then
+            echo ""
+            echo "Warning: ${ERRORS} version mismatch(es) found. Proceeding with build anyway."
+            echo "Please update version numbers before the next release."
+          fi
+
+      - name: Build release ZIP
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PLUGIN_SLUG="carramba-woo-order-tracking"
+          BUILD_DIR="build"
+          ZIP_NAME="${PLUGIN_SLUG}-${VERSION}.zip"
+
+          mkdir -p "${BUILD_DIR}/${PLUGIN_SLUG}"
+
+          rsync -a \
             --exclude='.git' \
             --exclude='.gitignore' \
-            --exclude='.github' \
+            --exclude='.gitattributes' \
+            --exclude='.editorconfig' \
+            --exclude='.phpcs.xml' \
+            --exclude='.phpunit.result.cache' \
             --exclude='.claude' \
+            --exclude='phpcs.xml' \
+            --exclude='phpstan.neon' \
+            --exclude='phpunit.xml' \
             --exclude='CLAUDE.md' \
-            --exclude='*.md' \
-            --exclude='.DS_Store' \
+            --exclude='README.md' \
+            --exclude='tests' \
+            --exclude='scripts' \
+            --exclude='stubs' \
+            --exclude='docs' \
+            --exclude='build' \
+            --exclude='dist' \
             --exclude='node_modules' \
-            --exclude='vendor' \
+            --exclude='.github' \
+            --exclude='.vscode' \
+            --exclude='.idea' \
+            --exclude='.DS_Store' \
+            --exclude='*.log' \
+            --exclude='*.cache' \
             --exclude='.env' \
-            --exclude='.env.example' \
-            --exclude='composer.json' \
-            --exclude='composer.lock' \
-            --exclude='package.json' \
-            --exclude='package-lock.json' \
-            --exclude='.eslintrc*' \
-            --exclude='.prettierrc*' \
-            --exclude='phpcs.xml*' \
-            --exclude='phpstan.neon*' \
-            --exclude='Makefile' \
-            ./ "$PLUGIN_DIR/" || true
+            --exclude='.env.*' \
+            ./ "${BUILD_DIR}/${PLUGIN_SLUG}/"
 
-          # Create zip file
-          cd "$TEMP_DIR"
-          zip -r "$ZIP_PATH" "$PLUGIN_NAME" -q
+          cd "${BUILD_DIR}"
+          zip -r "../${ZIP_NAME}" "${PLUGIN_SLUG}"
+          cd ..
 
-          # Verify zip was created
-          if [ ! -f "$ZIP_PATH" ]; then
-            echo "Error: Failed to create zip file"
-            exit 1
-          fi
+          echo "Created: ${ZIP_NAME}"
+          ls -lh "${ZIP_NAME}"
 
-          # Get file size
-          ZIP_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
-          echo "Zip package created: $ZIP_NAME (${ZIP_SIZE})"
-          echo "zip_path=${ZIP_PATH}" >> $GITHUB_OUTPUT
-          echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
+          echo "zip_name=${ZIP_NAME}" >> $GITHUB_ENV
 
-      - name: Generate release notes
-        id: release_notes
+      - name: Determine pre-release status
+        id: prerelease
         run: |
-          TAG=${{ steps.version.outputs.tag }}
-          VERSION=${{ steps.version.outputs.version }}
-
-          # Get tag message/annotation
-          TAG_MESSAGE=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "")
-
-          # Build release notes
-          if [ -n "$TAG_MESSAGE" ]; then
-            HEADER="$TAG_MESSAGE"
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ "$VERSION" =~ (alpha|beta|rc|dev) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "Version ${VERSION} is a pre-release"
           else
-            HEADER="Release version $VERSION"
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "Version ${VERSION} is a stable release"
           fi
-
-          # Write notes to output using heredoc
-          {
-            echo "notes<<RELEASE_NOTES_EOF"
-            echo "$HEADER"
-            echo ""
-            echo "---"
-            echo ""
-            echo "**Installation:**"
-            echo "1. Download the attached carramba-woo-order-tracking-${VERSION}.zip file"
-            echo "2. Go to WordPress Admin → Plugins → Add New"
-            echo "3. Click Upload Plugin"
-            echo "4. Select the downloaded zip file and activate"
-            echo ""
-            echo "**Requirements:**"
-            echo "- WordPress 5.0+"
-            echo "- WooCommerce 4.0+"
-            echo "- PHP 7.4+"
-            echo "RELEASE_NOTES_EOF"
-          } >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
+          files: ${{ env.zip_name }}
+          name: v${{ steps.version.outputs.version }}
           tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.tag }}
-          body: ${{ steps.release_notes.outputs.notes }}
-          files: ${{ steps.package.outputs.zip_path }}
-          draft: false
-          prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+          generate_release_notes: true
+          body: |
+            ## Carramba WooCommerce Order Tracking v${{ steps.version.outputs.version }}
 
-      - name: Print release summary
-        run: |
-          echo "Release Created Successfully!"
-          echo "- Tag: ${{ steps.version.outputs.tag }}"
-          echo "- Version: ${{ steps.version.outputs.version }}"
-          echo "- Zip Package: ${{ steps.package.outputs.zip_name }}"
-          echo "- Release URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
+            ### Installation
+
+            1. Download `${{ env.zip_name }}` from the assets below
+            2. Go to WordPress Admin > Plugins > Add New > Upload Plugin
+            3. Upload the ZIP file and click "Install Now"
+            4. Activate the plugin
+
+            ### Requirements
+
+            - PHP 7.4+
+            - WordPress 5.0+
+            - WooCommerce 4.0+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
